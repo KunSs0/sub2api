@@ -191,6 +191,19 @@ type UsageLog struct {
 	// 与上游没有该头的路径为 nil。
 	UpstreamRequestID *string
 
+	// ProxyID / ProxyName / ProxyHost / ProxyPort 是本次请求出口代理的事件时快照，
+	// 语义与 ops_error_logs.upstream_errors 的 proxy_id/proxy_name 一致：
+	//   nil/nil                        → 未记录（历史行、批量结算、Live、手工创建）
+	//   nil/'direct/no_proxy'          → 传输层被显式要求不使用代理
+	//   nil/'unknown'                  → 事件时无法证明路由（自定义 base URL 中继、WS 默认 client）
+	//   id/代理名/主机/端口             → 该受管代理
+	// Host/Port 仅在被管代理确定时填充，且不含 scheme 与任何凭据。
+	// 禁止在读取时用 accounts.proxy_id 反推（代理到期改投后该绑定已非历史事实）。
+	ProxyID   *int64
+	ProxyName *string
+	ProxyHost *string
+	ProxyPort *int
+
 	// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 	CacheTTLOverridden bool
 

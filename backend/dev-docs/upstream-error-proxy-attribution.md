@@ -134,3 +134,34 @@ rule is:
 If an operator deliberately produces a current-account cohort for legacy data,
 the report must be labeled as a current snapshot; it is not historical proxy
 attribution.
+
+## usage_logs: the admin usage-record snapshot
+
+`usage_logs` carries the same event-time contract for the admin usage record
+table (`proxy_id`, `proxy_name`), written where the row is built, from the same
+account snapshot the transport used:
+
+- `NULL / NULL` — unrecorded: rows written before these columns existed, batch
+  image settlement, OpenAI Live and manually created usage rows.
+- `NULL / 'direct/no_proxy'` — the HTTP transport was explicitly given no proxy.
+- `NULL / 'unknown'` — the route cannot be proven: an Anthropic custom base URL
+  relay receives the proxy URL as a query parameter and dials upstream itself,
+  and a WebSocket request without a managed proxy falls back to the default
+  client, which honors `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`.
+- `id / name` — that managed proxy.
+
+Two deliberate deviations from the ops error event contract:
+
+1. The usage row also snapshots the endpoint (`proxy_host`, `proxy_port`),
+   because the column exists to show where a request egressed and the usage
+   panel is admin-only. Scheme, credentials and authorization data are still
+   never stored, and host/port stay NULL unless `proxy_id` names a managed proxy.
+2. `proxy_name` is nullable here: `NULL` distinguishes "not recorded" from
+   "recorded as unknown", whereas the ops event normalizer materializes the
+   sentinel on legacy rows.
+
+The same prohibition applies: never reconstruct the historical proxy from
+`accounts.proxy_id`. Expired-proxy fallback rewrites that binding, and the usage
+list does not eager load the account's proxy. The attribution reaches the admin
+DTO only (`dto.AdminUsageLog`); the user-facing usage response must not contain
+any `proxy_*` field.

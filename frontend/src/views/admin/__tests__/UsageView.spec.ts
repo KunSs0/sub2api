@@ -34,6 +34,11 @@ const messages: Record<string, string> = {
   'admin.usage.failedToLoadUser': 'Failed to load user',
 	'admin.usage.requestId': 'Request ID',
 	'admin.usage.upstreamRequestId': 'Upstream ID',
+	'admin.usage.proxy': 'Egress proxy',
+	'admin.usage.proxyDirect': 'Direct',
+	'admin.usage.proxyUnknown': 'Unknown',
+	'admin.usage.proxyUnnamed': 'Unnamed proxy',
+	'admin.usage.proxyUnrecordedHint': 'Not recorded',
 	'usage.requestedModel': 'Requested model',
 	'usage.sentUpstreamModel': 'Sent upstream model',
 	'usage.upstreamResponseModel': 'Upstream response model',
@@ -524,6 +529,37 @@ describe('admin UsageView request ID column visibility', () => {
     )
   })
 
+  it('shows the egress proxy column by default', async () => {
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          UsageStatsCards: true,
+          UsageFilters: UsageFiltersStub,
+          UsageTable: UsageTableStub,
+          UsageExportProgress: true,
+          UsageCleanupDialog: true,
+          UserBalanceHistoryModal: true,
+          AuditLogModal: true,
+          Pagination: true,
+          Select: true,
+          DateRangePicker: true,
+          Icon: true,
+          TokenUsageTrend: true,
+          ModelDistributionChart: true,
+          GroupDistributionChart: true,
+          EndpointDistributionChart: true,
+          UserTokenRanking: true,
+        },
+      },
+    })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findComponent(UsageTableStub).props('columns')).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: 'proxy', label: 'Egress proxy' })]),
+    )
+  })
+
   it('keeps upstream ID hidden by default and allows enabling it from column settings', async () => {
     const wrapper = mount(UsageView, {
       global: {
@@ -789,14 +825,16 @@ describe('admin UsageView model audit export', () => {
 		)
 
 		const headers = aoaToSheet.mock.calls[0][0][0]
-		expect(headers.slice(4, 8)).toEqual([
+		expect(headers.slice(4, 9)).toEqual([
+			'Egress proxy',
 			'Requested model',
 			'Sent upstream model',
 			'Upstream response model',
 			'Upstream model mismatch',
 		])
 		const row = sheetAddAoa.mock.calls[0][1][0]
-		expect(row.slice(4, 8)).toEqual(['gpt-5.6-sol', 'gpt-5.5', 'gpt-5.4', 'Yes'])
+		// 该用例的用量行没有代理归属字段，导出与界面一致显示「未知」。
+		expect(row.slice(4, 9)).toEqual(['Unknown', 'gpt-5.6-sol', 'gpt-5.5', 'gpt-5.4', 'Yes'])
 		expect(saveAs).toHaveBeenCalledTimes(1)
 	})
 })

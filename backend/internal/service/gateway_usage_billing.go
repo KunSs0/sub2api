@@ -1139,12 +1139,20 @@ func (s *GatewayService) buildRecordUsageLog(
 			"selected_response_model", strings.TrimSpace(result.UpstreamResponseModel),
 		)
 	}
+	// 出口代理归属：account 即传输账号，与 gateway_forward 解析 proxyURL 用的是同一个
+	// 快照；自定义 base URL 中继不参与建连，会被标为 unknown。
+	proxyID, proxyName, proxyHost, proxyPort := usageLogProxyAttribution(account)
+
 	usageLog := &UsageLog{
 		UserID:                   user.ID,
 		APIKeyID:                 apiKey.ID,
 		AccountID:                account.ID,
 		RequestID:                requestID,
 		UpstreamRequestID:        usageUpstreamRequestIDPtr(account, result.UpstreamHeaders, false),
+		ProxyID:                  proxyID,
+		ProxyName:                optionalTrimmedStringPtr(proxyName),
+		ProxyHost:                optionalTrimmedStringPtr(proxyHost),
+		ProxyPort:                proxyPort,
 		Model:                    result.Model,
 		RequestedModel:           requestedModel,
 		UpstreamModel:            optionalTrimmedStringPtr(result.UpstreamModel),

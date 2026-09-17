@@ -688,6 +688,15 @@ type AdminUsageLog struct {
 	ModelMappingChain *string `json:"model_mapping_chain,omitempty"`
 	// UpstreamRequestID 是直接上游声明的请求标识，仅管理端可见。
 	UpstreamRequestID *string `json:"upstream_request_id,omitempty"`
+
+	// ProxyID / ProxyName / ProxyHost / ProxyPort 是本次请求出口代理的事件时快照，
+	// 仅管理端可见（用户端 DTO 绝不包含）。语义见 service.UsageLog：
+	// nil/'direct/no_proxy' 为直连，nil/'unknown' 为无法证明路由，其余为受管代理。
+	// Host/Port 不含 scheme 与凭据。
+	ProxyID   *int64  `json:"proxy_id,omitempty"`
+	ProxyName *string `json:"proxy_name,omitempty"`
+	ProxyHost *string `json:"proxy_host,omitempty"`
+	ProxyPort *int    `json:"proxy_port,omitempty"`
 	// BillingTier 计费层级标签（per_request/image 模式）
 	BillingTier *string `json:"billing_tier,omitempty"`
 

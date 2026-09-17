@@ -1779,6 +1779,14 @@ export interface AdminUsageLog extends UsageLog {
   channel_id?: number | null
   billing_tier?: string | null
 
+  // 本次请求实际出口代理的事件时快照（仅管理员可见）。
+  // proxy_name 可能是代理名，或哨兵值 'direct/no_proxy'（直连）/ 'unknown'（无法确定）；
+  // 四者全为 null 表示该行未记录归属（早于本功能的记录等）。
+  proxy_id?: number | null
+  proxy_name?: string | null
+  proxy_host?: string | null
+  proxy_port?: number | null
+
   // 最小账号信息（仅管理员接口返回）
   account?: UsageLogAccountSummary
 }

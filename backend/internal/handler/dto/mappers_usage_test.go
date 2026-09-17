@@ -200,6 +200,50 @@ func TestUsageLogFromService_KeepsUserBillingAndIPWithoutAdminCostFields(t *test
 	require.NotContains(t, string(userJSON), "account_cost")
 }
 
+// TestUsageLogFromService_KeepsProxyAttributionAdminOnly is the guard for the
+// egress proxy snapshot: which proxy a request used is admin-only and must never
+// reach the user-facing DTO.
+func TestUsageLogFromService_KeepsProxyAttributionAdminOnly(t *testing.T) {
+	t.Parallel()
+
+	proxyID := int64(7)
+	proxyName := "eu-1"
+	proxyHost := "proxy.example"
+	proxyPort := 8080
+	log := &service.UsageLog{
+		RequestID: "req_proxy_attribution",
+		Model:     "claude-3",
+		ProxyID:   &proxyID,
+		ProxyName: &proxyName,
+		ProxyHost: &proxyHost,
+		ProxyPort: &proxyPort,
+	}
+
+	userJSON, err := json.Marshal(UsageLogFromService(log))
+	require.NoError(t, err)
+	require.NotContains(t, string(userJSON), "proxy_id")
+	require.NotContains(t, string(userJSON), "proxy_name")
+	require.NotContains(t, string(userJSON), "proxy_host")
+	require.NotContains(t, string(userJSON), "proxy_port")
+
+	adminDTO := UsageLogFromServiceAdmin(log)
+	require.NotNil(t, adminDTO.ProxyID)
+	require.Equal(t, proxyID, *adminDTO.ProxyID)
+	require.NotNil(t, adminDTO.ProxyName)
+	require.Equal(t, proxyName, *adminDTO.ProxyName)
+	require.NotNil(t, adminDTO.ProxyHost)
+	require.Equal(t, proxyHost, *adminDTO.ProxyHost)
+	require.NotNil(t, adminDTO.ProxyPort)
+	require.Equal(t, proxyPort, *adminDTO.ProxyPort)
+
+	adminJSON, err := json.Marshal(adminDTO)
+	require.NoError(t, err)
+	require.Contains(t, string(adminJSON), `"proxy_id":7`)
+	require.Contains(t, string(adminJSON), `"proxy_name":"eu-1"`)
+	require.Contains(t, string(adminJSON), `"proxy_host":"proxy.example"`)
+	require.Contains(t, string(adminJSON), `"proxy_port":8080`)
+}
+
 func TestUsageLogFromService_UsersSeeRequestedReasoningEffortOnly(t *testing.T) {
 	t.Parallel()
 

@@ -526,6 +526,48 @@ func opsUpstreamWSProxyAttribution(account *Account) (*int64, string) {
 	return proxyID, name
 }
 
+// usageLogProxyAttribution snapshots the outbound proxy for usage_logs. It uses
+// the same decision as the HTTP transports that dial upstream, plus one
+// usage-specific case: an Anthropic custom base URL relay receives the proxy URL
+// as a query parameter and dials upstream itself, so sub2api cannot prove the
+// egress route and the row is marked unknown rather than direct.
+//
+// Host and port are only reported for a managed proxy, and never carry a scheme
+// or credentials.
+func usageLogProxyAttribution(account *Account) (proxyID *int64, name string, host string, port *int) {
+	if account != nil && account.IsCustomBaseURLEnabled() && account.GetCustomBaseURL() != "" {
+		return nil, opsProxyNameUnknown, "", nil
+	}
+	id, label := opsUpstreamProxyAttribution(account)
+	return usageLogProxySnapshot(id, label, account)
+}
+
+// usageLogWSProxyAttribution is the WebSocket counterpart for usage_logs. A WS
+// request without a usable managed proxy falls back to the default client (which
+// honors HTTP_PROXY/HTTPS_PROXY/NO_PROXY), so the route is unknown, not direct.
+func usageLogWSProxyAttribution(account *Account) (proxyID *int64, name string, host string, port *int) {
+	id, label := opsUpstreamWSProxyAttribution(account)
+	return usageLogProxySnapshot(id, label, account)
+}
+
+// usageLogProxySnapshot pairs an attribution decision with the endpoint
+// snapshot. Host and port are only reported when the decision names a managed
+// proxy, so the stored columns can never disagree with proxy_id.
+func usageLogProxySnapshot(proxyID *int64, name string, account *Account) (id *int64, proxyName string, host string, port *int) {
+	if proxyID == nil {
+		return nil, name, "", nil
+	}
+	if account == nil || account.Proxy == nil {
+		return proxyID, name, "", nil
+	}
+	host = strings.TrimSpace(account.Proxy.Host)
+	if account.Proxy.Port > 0 {
+		value := account.Proxy.Port
+		port = &value
+	}
+	return proxyID, name, host, port
+}
+
 func setUnknownOpsUpstreamProxy(ev *OpsUpstreamErrorEvent) {
 	if ev == nil {
 		return

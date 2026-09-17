@@ -71,6 +71,11 @@ const messages: Record<string, string> = {
 	'usage.upstreamResponseModel': 'Upstream response',
 	'usage.modelVariant': 'Possible version variant',
 	'usage.modelMismatch': 'Different model',
+  'admin.usage.proxy': 'Egress proxy',
+  'admin.usage.proxyDirect': 'Direct',
+  'admin.usage.proxyUnknown': 'Unknown',
+  'admin.usage.proxyUnnamed': 'Unnamed proxy',
+  'admin.usage.proxyUnrecordedHint': 'Not recorded',
 }
 
 vi.mock('vue-i18n', async () => {
@@ -95,6 +100,7 @@ const DataTableStub = {
         <slot name="cell-cost" :row="row" />
         <slot name="cell-request_id" :row="row" />
         <slot name="cell-upstream_request_id" :row="row" />
+        <slot name="cell-proxy" :row="row" />
       </div>
     </div>
   `,
@@ -852,5 +858,61 @@ describe('admin UsageTable deleted-user badge', () => {
 
     expect(wrapper.text()).not.toContain('Deleted')
     expect(wrapper.text()).toContain('active@test.com')
+  })
+})
+
+describe('admin UsageTable egress proxy cell', () => {
+  const proxyRow = (overrides: Record<string, unknown>) => ({
+    ...baseImageRow,
+    request_id: 'req-proxy',
+    ...overrides,
+  })
+
+  const mountWithRows = (rows: Record<string, unknown>[]) =>
+    mount(UsageTable, {
+      props: { data: rows, loading: false, columns: [] },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+  it('shows the managed proxy name together with its endpoint', () => {
+    const wrapper = mountWithRows([
+      proxyRow({ proxy_id: 42, proxy_name: 'eu-1', proxy_host: 'proxy.example', proxy_port: 8080 }),
+    ])
+
+    expect(wrapper.get('[data-testid="proxy-badge"]').text()).toBe('eu-1')
+    expect(wrapper.get('[data-testid="proxy-badge"]').attributes('title')).toBe('eu-1 (#42) proxy.example:8080')
+    expect(wrapper.text()).toContain('proxy.example:8080')
+  })
+
+  it('labels an explicit direct route without inventing an endpoint', () => {
+    const wrapper = mountWithRows([
+      proxyRow({ proxy_id: null, proxy_name: 'direct/no_proxy', proxy_host: null, proxy_port: null }),
+    ])
+
+    expect(wrapper.get('[data-testid="proxy-badge"]').text()).toBe('Direct')
+    expect(wrapper.text()).not.toContain('proxy.example')
+  })
+
+  it('labels an unprovable route as unknown', () => {
+    const wrapper = mountWithRows([proxyRow({ proxy_id: null, proxy_name: 'unknown' })])
+
+    expect(wrapper.get('[data-testid="proxy-badge"]').text()).toBe('Unknown')
+  })
+
+  it('shows unknown for rows written before attribution existed', () => {
+    const wrapper = mountWithRows([
+      proxyRow({ proxy_id: null, proxy_name: null, proxy_host: null, proxy_port: null }),
+    ])
+
+    const cell = wrapper.get('[data-testid="proxy-unrecorded"]')
+    expect(cell.text()).toBe('Unknown')
+    expect(cell.attributes('title')).toBe('Not recorded')
   })
 })

@@ -304,6 +304,26 @@
           <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
         </template>
 
+        <template #cell-proxy="{ row }">
+          <div v-if="row.proxy_name" class="flex flex-wrap items-center gap-1.5">
+            <span
+              data-testid="proxy-badge"
+              class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
+              :class="proxyBadgeClass(row.proxy_name)"
+              :title="proxyTooltip(row)"
+            >{{ proxyLabel(row.proxy_name) }}</span>
+            <span v-if="row.proxy_host" class="font-mono text-[11px] text-gray-500 dark:text-gray-400" :title="proxyTooltip(row)">
+              {{ proxyEndpoint(row) }}
+            </span>
+          </div>
+          <span
+            v-else
+            data-testid="proxy-unrecorded"
+            class="text-xs text-amber-700 dark:text-amber-300"
+            :title="t('admin.usage.proxyUnrecordedHint')"
+          >{{ t('admin.usage.proxyUnknown') }}</span>
+        </template>
+
         <template #empty><EmptyState :message="t('usage.noRecords')" /></template>
       </DataTable>
     </div>
@@ -722,6 +742,33 @@ const getRequestTypeBadgeClass = (row: AdminUsageLog): string => {
 
 const formatUserAgent = (ua: string): string => {
   return ua
+}
+
+// 出口代理列：proxy_name 可能是代理名，也可能是两种哨兵值，语义见
+// backend/dev-docs/upstream-error-proxy-attribution.md。
+const proxyLabel = (name: string): string => {
+  if (name === 'direct/no_proxy') return t('admin.usage.proxyDirect')
+  if (name === 'unknown') return t('admin.usage.proxyUnknown')
+  if (name === 'proxy') return t('admin.usage.proxyUnnamed')
+  return name
+}
+
+const proxyBadgeClass = (name: string): string => {
+  if (name === 'direct/no_proxy') return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+  if (name === 'unknown') return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+  return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+}
+
+const proxyEndpoint = (row: AdminUsageLog): string => {
+  if (!row.proxy_host) return ''
+  return row.proxy_port ? `${row.proxy_host}:${row.proxy_port}` : row.proxy_host
+}
+
+const proxyTooltip = (row: AdminUsageLog): string => {
+  const label = row.proxy_name ? proxyLabel(row.proxy_name) : ''
+  const endpoint = proxyEndpoint(row)
+  const id = row.proxy_id != null ? ` (#${row.proxy_id})` : ''
+  return `${label}${id}${endpoint ? ` ${endpoint}` : ''}`.trim()
 }
 
 // 超过 1 分钟简化为 "Xm Ys"，免去人工换算（超过 1 小时再进位为 "Xh Ym"）

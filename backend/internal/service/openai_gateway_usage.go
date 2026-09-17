@@ -375,12 +375,23 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		// Keep the image cache split in the existing usage_logs JSONB payload.
 		imageSizeBreakdown["image_cache_read_tokens"] = result.Usage.ImageCacheReadTokens
 	}
+	// 出口代理归属：WS 传输在没有受管代理时会回落到 default client（可能吃环境变量
+	// 代理），因此用 WS 变体标为 unknown 而不是 direct。
+	proxyID, proxyName, proxyHost, proxyPort := usageLogProxyAttribution(account)
+	if result.OpenAIWSMode {
+		proxyID, proxyName, proxyHost, proxyPort = usageLogWSProxyAttribution(account)
+	}
+
 	usageLog := &UsageLog{
 		UserID:                   user.ID,
 		APIKeyID:                 apiKey.ID,
 		AccountID:                account.ID,
 		RequestID:                requestID,
 		UpstreamRequestID:        usageUpstreamRequestIDPtr(account, result.UpstreamHeaders, result.OpenAIWSMode),
+		ProxyID:                  proxyID,
+		ProxyName:                optionalTrimmedStringPtr(proxyName),
+		ProxyHost:                optionalTrimmedStringPtr(proxyHost),
+		ProxyPort:                proxyPort,
 		Model:                    result.Model,
 		RequestedModel:           requestedModel,
 		UpstreamModel:            optionalTrimmedStringPtr(result.UpstreamModel),

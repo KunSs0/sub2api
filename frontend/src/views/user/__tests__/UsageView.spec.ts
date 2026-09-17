@@ -216,6 +216,34 @@ describe('user UsageView', () => {
     getAvailable.mockResolvedValue([{ id: 1, name: 'default' }])
   })
 
+  it('never exposes the admin-only egress proxy column', async () => {
+    // 出口代理归属只属于管理端：这条断言是防止列定义被误加进用户端视图的护栏。
+    const tableStub = { props: ['columns'], template: '<div />' }
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: simpleStub,
+          Pagination: true,
+          Select: true,
+          DateRangePicker: true,
+          Icon: true,
+          UsageStatsCards: chartStub,
+          UsageTable: tableStub,
+          UserErrorRequestsTable: chartStub,
+          ModelDistributionChart: chartStub,
+          GroupDistributionChart: chartStub,
+          EndpointDistributionChart: chartStub,
+          TokenUsageTrend: chartStub,
+        },
+      },
+    })
+    await flushPromises()
+
+    const keys = (wrapper.findComponent(tableStub).props('columns') as { key: string }[]).map((c) => c.key)
+    expect(keys).not.toContain('proxy')
+    expect(keys.length).toBeGreaterThan(0)
+  })
+
   it('loads logs, stats, model stats, and snapshot on first render', async () => {
     mountUsageView()
     await flushPromises()
