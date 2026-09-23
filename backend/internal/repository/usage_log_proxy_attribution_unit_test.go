@@ -30,8 +30,8 @@ func newProxyAttributionUsageLog(proxyID *int64, name, host *string, port *int) 
 // TestPrepareUsageLogInsert_ProxyAttributionArgWiring pins the four proxy
 // snapshot columns to the arg slice / arg-type table. They sit between
 // native_compaction_v2 and created_at, so the offsets below are counted from
-// the tail: created_at is last, then proxy_port, proxy_host, proxy_name,
-// proxy_id, native_compaction_v2.
+// the tail: created_at is last, then timing_breakdown, proxy_port, proxy_host,
+// proxy_name, proxy_id, native_compaction_v2.
 func TestPrepareUsageLogInsert_ProxyAttributionArgWiring(t *testing.T) {
 	proxyID := int64(7)
 	name := "eu-1"
@@ -42,47 +42,47 @@ func TestPrepareUsageLogInsert_ProxyAttributionArgWiring(t *testing.T) {
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
 	argCount := len(prepared.args)
 
-	idArg, ok := prepared.args[argCount-5].(sql.NullInt64)
-	require.True(t, ok, "proxy_id arg should be sql.NullInt64, got %T", prepared.args[argCount-5])
+	idArg, ok := prepared.args[argCount-6].(sql.NullInt64)
+	require.True(t, ok, "proxy_id arg should be sql.NullInt64, got %T", prepared.args[argCount-6])
 	require.True(t, idArg.Valid)
 	require.Equal(t, proxyID, idArg.Int64)
-	require.Equal(t, "bigint", usageLogInsertArgTypes[argCount-5])
+	require.Equal(t, "bigint", usageLogInsertArgTypes[argCount-6])
 
-	nameArg, ok := prepared.args[argCount-4].(sql.NullString)
-	require.True(t, ok, "proxy_name arg should be sql.NullString, got %T", prepared.args[argCount-4])
+	nameArg, ok := prepared.args[argCount-5].(sql.NullString)
+	require.True(t, ok, "proxy_name arg should be sql.NullString, got %T", prepared.args[argCount-5])
 	require.True(t, nameArg.Valid)
 	require.Equal(t, name, nameArg.String)
-	require.Equal(t, "text", usageLogInsertArgTypes[argCount-4])
+	require.Equal(t, "text", usageLogInsertArgTypes[argCount-5])
 
-	hostArg, ok := prepared.args[argCount-3].(sql.NullString)
-	require.True(t, ok, "proxy_host arg should be sql.NullString, got %T", prepared.args[argCount-3])
+	hostArg, ok := prepared.args[argCount-4].(sql.NullString)
+	require.True(t, ok, "proxy_host arg should be sql.NullString, got %T", prepared.args[argCount-4])
 	require.True(t, hostArg.Valid)
 	require.Equal(t, host, hostArg.String)
-	require.Equal(t, "text", usageLogInsertArgTypes[argCount-3])
+	require.Equal(t, "text", usageLogInsertArgTypes[argCount-4])
 
-	portArg, ok := prepared.args[argCount-2].(sql.NullInt64)
-	require.True(t, ok, "proxy_port arg should be sql.NullInt64, got %T", prepared.args[argCount-2])
+	portArg, ok := prepared.args[argCount-3].(sql.NullInt64)
+	require.True(t, ok, "proxy_port arg should be sql.NullInt64, got %T", prepared.args[argCount-3])
 	require.True(t, portArg.Valid)
 	require.Equal(t, int64(port), portArg.Int64)
-	require.Equal(t, "integer", usageLogInsertArgTypes[argCount-2])
+	require.Equal(t, "integer", usageLogInsertArgTypes[argCount-3])
 
 	// The attribution must never be persisted as an empty string.
 	absent := prepareUsageLogInsert(newProxyAttributionUsageLog(nil, nil, nil, nil))
-	require.False(t, absent.args[argCount-5].(sql.NullInt64).Valid, "absent proxy id must be NULL")
-	require.False(t, absent.args[argCount-4].(sql.NullString).Valid, "absent proxy name must be NULL")
-	require.False(t, absent.args[argCount-3].(sql.NullString).Valid, "absent proxy host must be NULL")
-	require.False(t, absent.args[argCount-2].(sql.NullInt64).Valid, "absent proxy port must be NULL")
+	require.False(t, absent.args[argCount-6].(sql.NullInt64).Valid, "absent proxy id must be NULL")
+	require.False(t, absent.args[argCount-5].(sql.NullString).Valid, "absent proxy name must be NULL")
+	require.False(t, absent.args[argCount-4].(sql.NullString).Valid, "absent proxy host must be NULL")
+	require.False(t, absent.args[argCount-3].(sql.NullInt64).Valid, "absent proxy port must be NULL")
 
 	empty := ""
 	emptyName := prepareUsageLogInsert(newProxyAttributionUsageLog(nil, &empty, &empty, nil))
-	require.False(t, emptyName.args[argCount-4].(sql.NullString).Valid, "empty proxy name must be NULL")
-	require.False(t, emptyName.args[argCount-3].(sql.NullString).Valid, "empty proxy host must be NULL")
+	require.False(t, emptyName.args[argCount-5].(sql.NullString).Valid, "empty proxy name must be NULL")
+	require.False(t, emptyName.args[argCount-4].(sql.NullString).Valid, "empty proxy host must be NULL")
 }
 
 // TestUsageLogInsertArgTypes_TailOrder fails loudly the next time a column is
 // appended without updating the offset-based tests.
 func TestUsageLogInsertArgTypes_TailOrder(t *testing.T) {
-	tail := usageLogInsertArgTypes[len(usageLogInsertArgTypes)-8:]
+	tail := usageLogInsertArgTypes[len(usageLogInsertArgTypes)-9:]
 	require.Equal(t, []string{
 		"text",        // upstream_request_id
 		"text",        // session_id
@@ -91,6 +91,7 @@ func TestUsageLogInsertArgTypes_TailOrder(t *testing.T) {
 		"text",        // proxy_name
 		"text",        // proxy_host
 		"integer",     // proxy_port
+		"jsonb",       // timing_breakdown
 		"timestamptz", // created_at
 	}, tail)
 }

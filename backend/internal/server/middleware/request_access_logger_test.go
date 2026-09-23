@@ -10,6 +10,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -198,6 +199,55 @@ func TestLogger_AccessLogIncludesCoreFields(t *testing.T) {
 	if !found {
 		t.Fatalf("access log event not found")
 	}
+}
+
+func TestLogger_AccessLogIncludesOpsTimingBreakdown(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	sink := initMiddlewareTestLogger(t)
+
+	r := gin.New()
+	r.Use(Logger())
+	r.POST("/v1/responses", func(c *gin.Context) {
+		c.Set(service.OpsAuthLatencyMsKey, int64(12))
+		c.Set(service.OpsRoutingLatencyMsKey, int64(88))
+		c.Set(service.OpsUpstreamDispatchOffsetMsKey, int64(40))
+		c.Set(service.OpsUpstreamLatencyMsKey, int64(300))
+		c.Set(service.OpsTimeToFirstTokenMsKey, int64(500))
+		c.Set(service.OpsResponseLatencyMsKey, int64(800))
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status=%d", w.Code)
+	}
+
+	for _, event := range sink.list() {
+		if event == nil || event.Message != "http request completed" {
+			continue
+		}
+		want := map[string]int64{
+			"auth_latency_ms":                12,
+			"routing_latency_ms":             88,
+			"upstream_dispatch_offset_ms":    40,
+			"upstream_header_latency_ms":     300,
+			"first_token_ms":                 500,
+			"response_latency_ms":            800,
+			"forward_latency_ms":             1100,
+			"upstream_wait_after_headers_ms": 160,
+			"after_first_token_ms":           600,
+		}
+		for key, expected := range want {
+			got, ok := event.Fields[key].(int64)
+			if !ok || got != expected {
+				t.Fatalf("%s=%v (%T), want %d", key, event.Fields[key], event.Fields[key], expected)
+			}
+		}
+		return
+	}
+	t.Fatalf("access log event not found")
 }
 
 func TestLogger_IngressRejectRemainsInStandardAccessLog(t *testing.T) {

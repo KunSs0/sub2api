@@ -87,7 +87,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       checker({
-        vueTsc: true
+        vueTsc: true,
+        enableBuild: env.VITE_SKIP_CHECKER !== 'true'
       }),
       injectPublicSettings(backendUrl)
     ],

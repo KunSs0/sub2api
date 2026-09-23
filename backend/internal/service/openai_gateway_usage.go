@@ -43,6 +43,9 @@ type OpenAIRecordUsageInput struct {
 	// Responses handler from stream=true + compaction_trigger. It never stores
 	// the request payload and does not replace the transport request type.
 	NativeCompactionV2 bool
+	// TimingBreakdown is captured before the asynchronous usage task is queued;
+	// the worker must not depend on the request context still being alive.
+	TimingBreakdown *UsageTimingBreakdown
 	ChannelUsageFields
 }
 
@@ -415,6 +418,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		ImageSizeSource:          optionalTrimmedStringPtr(result.ImageSizeSource),
 		ImageSizeBreakdown:       imageSizeBreakdown,
 		NativeCompactionV2:       input.NativeCompactionV2,
+		TimingBreakdown:          input.TimingBreakdown,
 	}
 	isVideoUsage := isGrokVideoUsageResult(result, billingModels)
 	if isVideoUsage {

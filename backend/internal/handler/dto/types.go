@@ -584,6 +584,8 @@ type BatchUpdateRedeemCodesRequest struct {
 }
 
 // UsageLog 是普通用户接口使用的 usage log DTO（不包含管理员字段）。
+type UsageTimingBreakdown = service.UsageTimingBreakdown
+
 type UsageLog struct {
 	ID        int64  `json:"id"`
 	UserID    int64  `json:"user_id"`
@@ -628,9 +630,10 @@ type UsageLog struct {
 	OpenAIWSMode bool   `json:"openai_ws_mode"`
 	// NativeCompactionV2 is true only for requests positively identified at
 	// runtime as the native OpenAI remote compaction v2 wire.
-	NativeCompactionV2 bool `json:"native_compaction_v2"`
-	DurationMs         *int `json:"duration_ms"`
-	FirstTokenMs       *int `json:"first_token_ms"`
+	NativeCompactionV2 bool                  `json:"native_compaction_v2"`
+	DurationMs         *int                  `json:"duration_ms"`
+	FirstTokenMs       *int                  `json:"first_token_ms"`
+	TimingBreakdown    *UsageTimingBreakdown `json:"timing_breakdown,omitempty"`
 
 	// 图片生成字段
 	ImageCount         int            `json:"image_count"`

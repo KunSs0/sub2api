@@ -23,11 +23,15 @@ const (
 	OpsUpstreamModelKey        = "ops_upstream_model"
 
 	// Optional stage latencies (milliseconds) for troubleshooting and alerting.
-	OpsAuthLatencyMsKey      = "ops_auth_latency_ms"
-	OpsRoutingLatencyMsKey   = "ops_routing_latency_ms"
-	OpsUpstreamLatencyMsKey  = "ops_upstream_latency_ms"
-	OpsResponseLatencyMsKey  = "ops_response_latency_ms"
-	OpsTimeToFirstTokenMsKey = "ops_time_to_first_token_ms"
+	OpsAuthLatencyMsKey     = "ops_auth_latency_ms"
+	OpsRoutingLatencyMsKey  = "ops_routing_latency_ms"
+	OpsUpstreamLatencyMsKey = "ops_upstream_latency_ms"
+	// OpsUpstreamDispatchOffsetMsKey is the elapsed time from Forward start to
+	// the upstream HTTP request being dispatched. It lets access logs split
+	// TTFT into request preparation, response-header wait, and post-header wait.
+	OpsUpstreamDispatchOffsetMsKey = "ops_upstream_dispatch_offset_ms"
+	OpsResponseLatencyMsKey        = "ops_response_latency_ms"
+	OpsTimeToFirstTokenMsKey       = "ops_time_to_first_token_ms"
 	// OpenAI WS 关键观测字段
 	OpsOpenAIWSQueueWaitMsKey = "ops_openai_ws_queue_wait_ms"
 	OpsOpenAIWSConnPickMsKey  = "ops_openai_ws_conn_pick_ms"
@@ -78,6 +82,112 @@ func SetOpsLatencyMs(c *gin.Context, key string, value int64) {
 		return
 	}
 	c.Set(key, value)
+}
+
+// GetOpsLatencyMs reads a latency value previously stored in the Gin context.
+// Values are kept tolerant of the integer types used by handlers and tests so
+// consumers such as the access logger do not need to duplicate this parsing.
+func GetOpsLatencyMs(c *gin.Context, key string) (int64, bool) {
+	if c == nil || strings.TrimSpace(key) == "" {
+		return 0, false
+	}
+	v, ok := c.Get(key)
+	if !ok {
+		return 0, false
+	}
+	switch value := v.(type) {
+	case int64:
+		return value, value >= 0
+	case int:
+		return int64(value), value >= 0
+	case int32:
+		return int64(value), value >= 0
+	case int16:
+		return int64(value), value >= 0
+	case int8:
+		return int64(value), value >= 0
+	case uint64:
+		return int64(value), value <= uint64(^uint64(0)>>1)
+	case uint:
+		return int64(value), uint64(value) <= uint64(^uint64(0)>>1)
+	case uint32:
+		return int64(value), true
+	case uint16:
+		return int64(value), true
+	case uint8:
+		return int64(value), true
+	case float64:
+		return int64(value), value >= 0
+	case float32:
+		return int64(value), value >= 0
+	default:
+		return 0, false
+	}
+}
+
+// UsageTimingBreakdown is the request timing snapshot persisted with a usage
+// row. The top-level usage_log duration/first_token fields remain the stable
+// summary values; this optional object carries the diagnostic stages needed to
+// explain a slow first token without parsing server logs.
+type UsageTimingBreakdown struct {
+	AuthLatencyMs              *int `json:"auth_latency_ms,omitempty"`
+	RoutingLatencyMs           *int `json:"routing_latency_ms,omitempty"`
+	UpstreamDispatchOffsetMs   *int `json:"upstream_dispatch_offset_ms,omitempty"`
+	UpstreamHeaderLatencyMs    *int `json:"upstream_header_latency_ms,omitempty"`
+	UpstreamWaitAfterHeadersMs *int `json:"upstream_wait_after_headers_ms,omitempty"`
+	FirstTokenMs               *int `json:"first_token_ms,omitempty"`
+	AfterFirstTokenMs          *int `json:"after_first_token_ms,omitempty"`
+	ForwardLatencyMs           *int `json:"forward_latency_ms,omitempty"`
+	ResponseLatencyMs          *int `json:"response_latency_ms,omitempty"`
+}
+
+// CaptureUsageTimingBreakdown snapshots the timing values accumulated in the
+// request context. It is intentionally tolerant of missing stages because
+// different protocols do not all expose the same milestones.
+func CaptureUsageTimingBreakdown(c *gin.Context, forwardDurationMs int64) *UsageTimingBreakdown {
+	if c == nil || forwardDurationMs < 0 {
+		return nil
+	}
+
+	toInt := func(value int64) *int {
+		converted := int(value)
+		return &converted
+	}
+	read := func(key string) *int {
+		value, ok := GetOpsLatencyMs(c, key)
+		if !ok {
+			return nil
+		}
+		return toInt(value)
+	}
+
+	out := &UsageTimingBreakdown{
+		AuthLatencyMs:            read(OpsAuthLatencyMsKey),
+		RoutingLatencyMs:         read(OpsRoutingLatencyMsKey),
+		UpstreamDispatchOffsetMs: read(OpsUpstreamDispatchOffsetMsKey),
+		UpstreamHeaderLatencyMs:  read(OpsUpstreamLatencyMsKey),
+		ResponseLatencyMs:        read(OpsResponseLatencyMsKey),
+		FirstTokenMs:             read(OpsTimeToFirstTokenMsKey),
+		ForwardLatencyMs:         toInt(forwardDurationMs),
+	}
+
+	if out.FirstTokenMs != nil && out.ForwardLatencyMs != nil && *out.ForwardLatencyMs >= *out.FirstTokenMs {
+		afterFirstTokenMs := *out.ForwardLatencyMs - *out.FirstTokenMs
+		out.AfterFirstTokenMs = &afterFirstTokenMs
+	}
+	if out.FirstTokenMs != nil && out.UpstreamDispatchOffsetMs != nil && out.UpstreamHeaderLatencyMs != nil {
+		waitAfterHeadersMs := *out.FirstTokenMs - *out.UpstreamDispatchOffsetMs - *out.UpstreamHeaderLatencyMs
+		if waitAfterHeadersMs >= 0 {
+			out.UpstreamWaitAfterHeadersMs = &waitAfterHeadersMs
+		}
+	}
+
+	if out.AuthLatencyMs == nil && out.RoutingLatencyMs == nil && out.UpstreamDispatchOffsetMs == nil &&
+		out.UpstreamHeaderLatencyMs == nil && out.UpstreamWaitAfterHeadersMs == nil && out.FirstTokenMs == nil &&
+		out.AfterFirstTokenMs == nil && out.ResponseLatencyMs == nil {
+		return nil
+	}
+	return out
 }
 
 // SetOpsUpstreamModel stores only the effective model slug for final Ops

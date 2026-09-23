@@ -106,6 +106,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // proxy_name
 			sqlmock.AnyArg(), // proxy_host
 			sqlmock.AnyArg(), // proxy_port
+			sqlmock.AnyArg(), // timing_breakdown
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
@@ -205,6 +206,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // proxy_name
 			sqlmock.AnyArg(), // proxy_host
 			sqlmock.AnyArg(), // proxy_port
+			sqlmock.AnyArg(), // timing_breakdown
 			createdAt,
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
@@ -286,8 +288,8 @@ func TestPrepareUsageLogInsert_PersistsNativeCompactionV2WithoutChangingRequestT
 	prepared := prepareUsageLogInsert(log)
 
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
-	require.Equal(t, "boolean", usageLogInsertArgTypes[len(usageLogInsertArgTypes)-6])
-	require.Equal(t, true, prepared.args[len(prepared.args)-6])
+	require.Equal(t, "boolean", usageLogInsertArgTypes[len(usageLogInsertArgTypes)-7])
+	require.Equal(t, true, prepared.args[len(prepared.args)-7])
 	require.Equal(t, int16(service.RequestTypeStream), prepared.args[30])
 	require.Equal(t, service.RequestTypeStream, log.RequestType)
 	require.True(t, log.Stream)
@@ -967,11 +969,12 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullFloat64{},
 			sql.NullString{}, // upstream_request_id
 			sql.NullString{},
-			false, // native_compaction_v2
+			false,            // native_compaction_v2
 			sql.NullInt64{},  // proxy_id
 			sql.NullString{}, // proxy_name
 			sql.NullString{}, // proxy_host
 			sql.NullInt64{},  // proxy_port
+			sql.NullString{}, // timing_breakdown
 			now,
 		}})
 		require.NoError(t, err)
@@ -1052,10 +1055,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // upstream_request_id
 			sql.NullString{},  // session_id
 			false,             // native_compaction_v2
-			sql.NullInt64{},  // proxy_id
-			sql.NullString{}, // proxy_name
-			sql.NullString{}, // proxy_host
-			sql.NullInt64{},  // proxy_port
+			sql.NullInt64{},   // proxy_id
+			sql.NullString{},  // proxy_name
+			sql.NullString{},  // proxy_host
+			sql.NullInt64{},   // proxy_port
+			sql.NullString{},  // timing_breakdown
 			now,
 		}})
 		require.NoError(t, err)
@@ -1119,10 +1123,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // upstream_request_id
 			sql.NullString{},  // session_id
 			true,              // native_compaction_v2
-			sql.NullInt64{},  // proxy_id
-			sql.NullString{}, // proxy_name
-			sql.NullString{}, // proxy_host
-			sql.NullInt64{},  // proxy_port
+			sql.NullInt64{},   // proxy_id
+			sql.NullString{},  // proxy_name
+			sql.NullString{},  // proxy_host
+			sql.NullInt64{},   // proxy_port
+			sql.NullString{},  // timing_breakdown
 			now,
 		}})
 		require.NoError(t, err)
@@ -1187,10 +1192,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // upstream_request_id
 			sql.NullString{},  // session_id
 			false,             // native_compaction_v2
-			sql.NullInt64{},  // proxy_id
-			sql.NullString{}, // proxy_name
-			sql.NullString{}, // proxy_host
-			sql.NullInt64{},  // proxy_port
+			sql.NullInt64{},   // proxy_id
+			sql.NullString{},  // proxy_name
+			sql.NullString{},  // proxy_host
+			sql.NullInt64{},   // proxy_port
+			sql.NullString{},  // timing_breakdown
 			now,
 		}})
 		require.NoError(t, err)

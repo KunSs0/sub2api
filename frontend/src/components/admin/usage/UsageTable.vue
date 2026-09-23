@@ -248,6 +248,21 @@
               <span class="text-gray-400 dark:text-gray-500">{{ t('usage.latencyDuration') }}</span>
               <span class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[durationSeverity(row.duration_ms ?? 0)]">{{ formatDuration(row.duration_ms) }}</span>
             </div>
+            <div
+              v-if="row.timing_breakdown"
+              class="group relative"
+              @mouseenter="showTimingTooltip($event, row)"
+              @mouseleave="hideTimingTooltip"
+            >
+              <button
+                type="button"
+                class="flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-blue-100 dark:bg-gray-700 dark:group-hover:bg-blue-900/50"
+                :aria-label="t('usage.latencyBreakdown')"
+                :title="t('usage.latencyBreakdown')"
+              >
+                <Icon name="infoCircle" size="xs" class="text-gray-400 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400" />
+              </button>
+            </div>
           </div>
         </template>
 
@@ -549,6 +564,43 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- Latency Breakdown Tooltip Portal -->
+  <Teleport to="body">
+    <div
+      v-if="timingTooltipVisible"
+      class="fixed z-[9999] pointer-events-none -translate-y-1/2"
+      :style="{
+        left: timingTooltipPosition.x + 'px',
+        top: timingTooltipPosition.y + 'px'
+      }"
+    >
+      <div class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-xs text-white shadow-xl dark:border-gray-600 dark:bg-gray-800">
+        <div class="space-y-1.5">
+          <div class="mb-2 border-b border-gray-700 pb-1.5">
+            <div class="text-xs font-semibold text-gray-300">{{ t('usage.latencyBreakdown') }}</div>
+          </div>
+          <div class="grid grid-cols-[max-content_max-content] items-center gap-x-6 gap-y-1 tabular-nums">
+            <span class="text-gray-400">{{ t('usage.latencyAuth') }}</span>
+            <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.auth_latency_ms) }}</span>
+            <span class="text-gray-400">{{ t('usage.latencyRouting') }}</span>
+            <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.routing_latency_ms) }}</span>
+            <span class="text-gray-400">{{ t('usage.latencyDispatch') }}</span>
+            <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_dispatch_offset_ms) }}</span>
+            <span class="text-gray-400">{{ t('usage.latencyHeader') }}</span>
+            <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_header_latency_ms) }}</span>
+            <span class="text-gray-400">{{ t('usage.latencyHeaderToFirst') }}</span>
+            <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_wait_after_headers_ms) }}</span>
+            <span class="text-gray-400">{{ t('usage.latencyAfterFirst') }}</span>
+            <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.after_first_token_ms) }}</span>
+            <span class="border-t border-gray-700 pt-1 font-medium text-gray-300">{{ t('usage.latencyForward') }}</span>
+            <span class="border-t border-gray-700 pt-1 font-semibold text-cyan-300">{{ formatDuration(timingTooltipData?.timing_breakdown?.forward_latency_ms) }}</span>
+          </div>
+        </div>
+        <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-gray-900 border-t-transparent dark:border-r-gray-800"></div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -718,6 +770,11 @@ const tokenTooltipVisible = ref(false)
 const tokenTooltipPosition = ref({ x: 0, y: 0 })
 const tokenTooltipData = ref<AdminUsageLog | null>(null)
 
+// Tooltip state - latency breakdown
+const timingTooltipVisible = ref(false)
+const timingTooltipPosition = ref({ x: 0, y: 0 })
+const timingTooltipData = ref<AdminUsageLog | null>(null)
+
 const getRequestTypeLabel = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
   if (requestType === 'cyber') return t('usage.cyber')
@@ -809,5 +866,20 @@ const showTokenTooltip = (event: MouseEvent, row: AdminUsageLog) => {
 const hideTokenTooltip = () => {
   tokenTooltipVisible.value = false
   tokenTooltipData.value = null
+}
+
+// Latency breakdown tooltip functions
+const showTimingTooltip = (event: MouseEvent, row: AdminUsageLog) => {
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  timingTooltipData.value = row
+  timingTooltipPosition.value.x = rect.right + 8
+  timingTooltipPosition.value.y = rect.top + rect.height / 2
+  timingTooltipVisible.value = true
+}
+
+const hideTimingTooltip = () => {
+  timingTooltipVisible.value = false
+  timingTooltipData.value = null
 }
 </script>

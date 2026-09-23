@@ -1785,6 +1785,16 @@ func FirstTokenMsNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldFirstTokenMs))
 }
 
+// TimingBreakdownIsNil applies the IsNil predicate on the "timing_breakdown" field.
+func TimingBreakdownIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldTimingBreakdown))
+}
+
+// TimingBreakdownNotNil applies the NotNil predicate on the "timing_breakdown" field.
+func TimingBreakdownNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldTimingBreakdown))
+}
+
 // UserAgentEQ applies the EQ predicate on the "user_agent" field.
 func UserAgentEQ(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldUserAgent, v))

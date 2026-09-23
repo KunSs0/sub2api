@@ -6,6 +6,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -77,6 +78,7 @@ func Logger() gin.HandlerFunc {
 		if model != "" {
 			fields = append(fields, zap.String("model", model))
 		}
+		fields = appendOpsTimingFields(c, fields)
 
 		l := logger.FromContext(c.Request.Context()).With(fields...)
 		l.Info("http request completed", zap.Time("completed_at", endTime))
@@ -85,4 +87,56 @@ func Logger() gin.HandlerFunc {
 			l.Warn("http request contains gin errors", zap.String("errors", c.Errors.String()))
 		}
 	}
+}
+
+// appendOpsTimingFields exposes the timing context on successful access logs.
+// The existing latency fields are intentionally kept unchanged; these extra
+// fields make the request path diagnosable without requiring an ops error row.
+//
+// For a normal OpenAI stream, the forward path can be decomposed as:
+//
+//	dispatch offset + upstream header wait + wait after headers + after TTFT
+//
+// The first two values are measured directly. The latter two are derived from
+// the semantic TTFT and the forward duration.
+func appendOpsTimingFields(c *gin.Context, fields []zap.Field) []zap.Field {
+	appendLatency := func(name, key string) (int64, bool) {
+		value, ok := service.GetOpsLatencyMs(c, key)
+		if ok {
+			fields = append(fields, zap.Int64(name, value))
+		}
+		return value, ok
+	}
+
+	appendLatency("auth_latency_ms", service.OpsAuthLatencyMsKey)
+	appendLatency("routing_latency_ms", service.OpsRoutingLatencyMsKey)
+	upstreamHeaderMs, hasUpstreamHeader := appendLatency("upstream_header_latency_ms", service.OpsUpstreamLatencyMsKey)
+	responseMs, hasResponse := appendLatency("response_latency_ms", service.OpsResponseLatencyMsKey)
+	ttftMs, hasTTFT := appendLatency("first_token_ms", service.OpsTimeToFirstTokenMsKey)
+	dispatchOffsetMs, hasDispatchOffset := appendLatency("upstream_dispatch_offset_ms", service.OpsUpstreamDispatchOffsetMsKey)
+
+	// response_latency_ms is the forward duration with the HTTP header wait
+	// removed. When the upstream latency is unavailable, it already represents
+	// the complete forward duration.
+	forwardMs := int64(0)
+	hasForward := false
+	if hasResponse {
+		forwardMs = responseMs
+		hasForward = true
+		if hasUpstreamHeader {
+			forwardMs += upstreamHeaderMs
+		}
+		fields = append(fields, zap.Int64("forward_latency_ms", forwardMs))
+	}
+
+	if hasTTFT && hasForward && forwardMs >= ttftMs {
+		fields = append(fields, zap.Int64("after_first_token_ms", forwardMs-ttftMs))
+	}
+	if hasTTFT && hasDispatchOffset && hasUpstreamHeader {
+		waitAfterHeadersMs := ttftMs - dispatchOffsetMs - upstreamHeaderMs
+		if waitAfterHeadersMs >= 0 {
+			fields = append(fields, zap.Int64("upstream_wait_after_headers_ms", waitAfterHeadersMs))
+		}
+	}
+	return fields
 }

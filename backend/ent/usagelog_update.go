@@ -712,6 +712,18 @@ func (_u *UsageLogUpdate) ClearFirstTokenMs() *UsageLogUpdate {
 	return _u
 }
 
+// SetTimingBreakdown sets the "timing_breakdown" field.
+func (_u *UsageLogUpdate) SetTimingBreakdown(v map[string]int) *UsageLogUpdate {
+	_u.mutation.SetTimingBreakdown(v)
+	return _u
+}
+
+// ClearTimingBreakdown clears the value of the "timing_breakdown" field.
+func (_u *UsageLogUpdate) ClearTimingBreakdown() *UsageLogUpdate {
+	_u.mutation.ClearTimingBreakdown()
+	return _u
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (_u *UsageLogUpdate) SetUserAgent(v string) *UsageLogUpdate {
 	_u.mutation.SetUserAgent(v)
@@ -1308,6 +1320,12 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.FirstTokenMsCleared() {
 		_spec.ClearField(usagelog.FieldFirstTokenMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.TimingBreakdown(); ok {
+		_spec.SetField(usagelog.FieldTimingBreakdown, field.TypeJSON, value)
+	}
+	if _u.mutation.TimingBreakdownCleared() {
+		_spec.ClearField(usagelog.FieldTimingBreakdown, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.UserAgent(); ok {
 		_spec.SetField(usagelog.FieldUserAgent, field.TypeString, value)
@@ -2226,6 +2244,18 @@ func (_u *UsageLogUpdateOne) ClearFirstTokenMs() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetTimingBreakdown sets the "timing_breakdown" field.
+func (_u *UsageLogUpdateOne) SetTimingBreakdown(v map[string]int) *UsageLogUpdateOne {
+	_u.mutation.SetTimingBreakdown(v)
+	return _u
+}
+
+// ClearTimingBreakdown clears the value of the "timing_breakdown" field.
+func (_u *UsageLogUpdateOne) ClearTimingBreakdown() *UsageLogUpdateOne {
+	_u.mutation.ClearTimingBreakdown()
+	return _u
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (_u *UsageLogUpdateOne) SetUserAgent(v string) *UsageLogUpdateOne {
 	_u.mutation.SetUserAgent(v)
@@ -2852,6 +2882,12 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.FirstTokenMsCleared() {
 		_spec.ClearField(usagelog.FieldFirstTokenMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.TimingBreakdown(); ok {
+		_spec.SetField(usagelog.FieldTimingBreakdown, field.TypeJSON, value)
+	}
+	if _u.mutation.TimingBreakdownCleared() {
+		_spec.ClearField(usagelog.FieldTimingBreakdown, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.UserAgent(); ok {
 		_spec.SetField(usagelog.FieldUserAgent, field.TypeString, value)

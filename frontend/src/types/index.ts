@@ -1688,6 +1688,18 @@ export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'cyber'
 export type ImageSizeSource = 'output' | 'input' | 'default' | 'legacy'
 export type ImageSizeBreakdown = Record<string, number>
 
+export interface UsageTimingBreakdown {
+  auth_latency_ms?: number | null
+  routing_latency_ms?: number | null
+  upstream_dispatch_offset_ms?: number | null
+  upstream_header_latency_ms?: number | null
+  upstream_wait_after_headers_ms?: number | null
+  first_token_ms?: number | null
+  after_first_token_ms?: number | null
+  forward_latency_ms?: number | null
+  response_latency_ms?: number | null
+}
+
 export interface UsageLog {
   id: number
   user_id: number
@@ -1726,6 +1738,7 @@ export interface UsageLog {
   native_compaction_v2: boolean
   duration_ms: number | null
   first_token_ms: number | null
+  timing_breakdown?: UsageTimingBreakdown | null
 
   // 图片生成字段
   image_count: number
