@@ -1739,6 +1739,13 @@ export interface UsageTimingBreakdown {
   routing_latency_ms?: number | null
   upstream_dispatch_offset_ms?: number | null
   upstream_header_latency_ms?: number | null
+  upstream_first_read_ms?: number | null
+  upstream_first_event_ms?: number | null
+  semantic_first_token_ms?: number | null
+  visible_first_token_ms?: number | null
+  upstream_first_event_type?: string | null
+  semantic_first_event_type?: string | null
+  visible_first_event_type?: string | null
   upstream_wait_after_headers_ms?: number | null
   first_token_ms?: number | null
   after_first_token_ms?: number | null

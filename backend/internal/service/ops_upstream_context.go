@@ -30,8 +30,19 @@ const (
 	// the upstream HTTP request being dispatched. It lets access logs split
 	// TTFT into request preparation, response-header wait, and post-header wait.
 	OpsUpstreamDispatchOffsetMsKey = "ops_upstream_dispatch_offset_ms"
-	OpsResponseLatencyMsKey        = "ops_response_latency_ms"
-	OpsTimeToFirstTokenMsKey       = "ops_time_to_first_token_ms"
+	// OpenAI stream milestones are relative to the request start. They let the
+	// access logger and usage row distinguish transport bytes, complete SSE
+	// events, semantic output, and visible output.
+	OpsUpstreamFirstReadMsKey          = "ops_upstream_first_read_ms"
+	OpsUpstreamFirstEventMsKey         = "ops_upstream_first_event_ms"
+	OpsOpenAISemanticFirstTokenMsKey   = "ops_openai_semantic_first_token_ms"
+	OpsOpenAIVisibleFirstTokenMsKey    = "ops_openai_visible_first_token_ms"
+	OpsUpstreamFirstEventTypeKey       = "ops_upstream_first_event_type"
+	OpsOpenAISemanticFirstEventTypeKey = "ops_openai_semantic_first_event_type"
+	OpsOpenAIVisibleFirstEventTypeKey  = "ops_openai_visible_first_event_type"
+	OpsUpstreamRequestIDKey            = "ops_upstream_request_id"
+	OpsResponseLatencyMsKey            = "ops_response_latency_ms"
+	OpsTimeToFirstTokenMsKey           = "ops_time_to_first_token_ms"
 	// OpenAI WS 关键观测字段
 	OpsOpenAIWSQueueWaitMsKey = "ops_openai_ws_queue_wait_ms"
 	OpsOpenAIWSConnPickMsKey  = "ops_openai_ws_conn_pick_ms"
@@ -84,6 +95,29 @@ func SetOpsLatencyMs(c *gin.Context, key string, value int64) {
 	c.Set(key, value)
 }
 
+// SetOpsString stores a request-local diagnostic string. Empty values are
+// allowed so a later upstream attempt can explicitly clear a stale value.
+func SetOpsString(c *gin.Context, key, value string) {
+	if c == nil || strings.TrimSpace(key) == "" {
+		return
+	}
+	c.Set(key, strings.TrimSpace(value))
+}
+
+// GetOpsString reads a request-local diagnostic string.
+func GetOpsString(c *gin.Context, key string) (string, bool) {
+	if c == nil || strings.TrimSpace(key) == "" {
+		return "", false
+	}
+	v, ok := c.Get(key)
+	if !ok {
+		return "", false
+	}
+	value, ok := v.(string)
+	value = strings.TrimSpace(value)
+	return value, ok && value != ""
+}
+
 // GetOpsLatencyMs reads a latency value previously stored in the Gin context.
 // Values are kept tolerant of the integer types used by handlers and tests so
 // consumers such as the access logger do not need to duplicate this parsing.
@@ -130,15 +164,22 @@ func GetOpsLatencyMs(c *gin.Context, key string) (int64, bool) {
 // summary values; this optional object carries the diagnostic stages needed to
 // explain a slow first token without parsing server logs.
 type UsageTimingBreakdown struct {
-	AuthLatencyMs              *int `json:"auth_latency_ms,omitempty"`
-	RoutingLatencyMs           *int `json:"routing_latency_ms,omitempty"`
-	UpstreamDispatchOffsetMs   *int `json:"upstream_dispatch_offset_ms,omitempty"`
-	UpstreamHeaderLatencyMs    *int `json:"upstream_header_latency_ms,omitempty"`
-	UpstreamWaitAfterHeadersMs *int `json:"upstream_wait_after_headers_ms,omitempty"`
-	FirstTokenMs               *int `json:"first_token_ms,omitempty"`
-	AfterFirstTokenMs          *int `json:"after_first_token_ms,omitempty"`
-	ForwardLatencyMs           *int `json:"forward_latency_ms,omitempty"`
-	ResponseLatencyMs          *int `json:"response_latency_ms,omitempty"`
+	AuthLatencyMs              *int   `json:"auth_latency_ms,omitempty"`
+	RoutingLatencyMs           *int   `json:"routing_latency_ms,omitempty"`
+	UpstreamDispatchOffsetMs   *int   `json:"upstream_dispatch_offset_ms,omitempty"`
+	UpstreamHeaderLatencyMs    *int   `json:"upstream_header_latency_ms,omitempty"`
+	UpstreamFirstReadMs        *int   `json:"upstream_first_read_ms,omitempty"`
+	UpstreamFirstEventMs       *int   `json:"upstream_first_event_ms,omitempty"`
+	SemanticFirstTokenMs       *int   `json:"semantic_first_token_ms,omitempty"`
+	VisibleFirstTokenMs        *int   `json:"visible_first_token_ms,omitempty"`
+	UpstreamFirstEventType     string `json:"upstream_first_event_type,omitempty"`
+	SemanticFirstEventType     string `json:"semantic_first_event_type,omitempty"`
+	VisibleFirstEventType      string `json:"visible_first_event_type,omitempty"`
+	UpstreamWaitAfterHeadersMs *int   `json:"upstream_wait_after_headers_ms,omitempty"`
+	FirstTokenMs               *int   `json:"first_token_ms,omitempty"`
+	AfterFirstTokenMs          *int   `json:"after_first_token_ms,omitempty"`
+	ForwardLatencyMs           *int   `json:"forward_latency_ms,omitempty"`
+	ResponseLatencyMs          *int   `json:"response_latency_ms,omitempty"`
 }
 
 // CaptureUsageTimingBreakdown snapshots the timing values accumulated in the
@@ -160,12 +201,23 @@ func CaptureUsageTimingBreakdown(c *gin.Context, forwardDurationMs int64) *Usage
 		}
 		return toInt(value)
 	}
+	readString := func(key string) string {
+		value, _ := GetOpsString(c, key)
+		return value
+	}
 
 	out := &UsageTimingBreakdown{
 		AuthLatencyMs:            read(OpsAuthLatencyMsKey),
 		RoutingLatencyMs:         read(OpsRoutingLatencyMsKey),
 		UpstreamDispatchOffsetMs: read(OpsUpstreamDispatchOffsetMsKey),
 		UpstreamHeaderLatencyMs:  read(OpsUpstreamLatencyMsKey),
+		UpstreamFirstReadMs:      read(OpsUpstreamFirstReadMsKey),
+		UpstreamFirstEventMs:     read(OpsUpstreamFirstEventMsKey),
+		SemanticFirstTokenMs:     read(OpsOpenAISemanticFirstTokenMsKey),
+		VisibleFirstTokenMs:      read(OpsOpenAIVisibleFirstTokenMsKey),
+		UpstreamFirstEventType:   readString(OpsUpstreamFirstEventTypeKey),
+		SemanticFirstEventType:   readString(OpsOpenAISemanticFirstEventTypeKey),
+		VisibleFirstEventType:    readString(OpsOpenAIVisibleFirstEventTypeKey),
 		ResponseLatencyMs:        read(OpsResponseLatencyMsKey),
 		FirstTokenMs:             read(OpsTimeToFirstTokenMsKey),
 		ForwardLatencyMs:         toInt(forwardDurationMs),
@@ -183,8 +235,10 @@ func CaptureUsageTimingBreakdown(c *gin.Context, forwardDurationMs int64) *Usage
 	}
 
 	if out.AuthLatencyMs == nil && out.RoutingLatencyMs == nil && out.UpstreamDispatchOffsetMs == nil &&
-		out.UpstreamHeaderLatencyMs == nil && out.UpstreamWaitAfterHeadersMs == nil && out.FirstTokenMs == nil &&
-		out.AfterFirstTokenMs == nil && out.ResponseLatencyMs == nil {
+		out.UpstreamHeaderLatencyMs == nil && out.UpstreamFirstReadMs == nil && out.UpstreamFirstEventMs == nil &&
+		out.SemanticFirstTokenMs == nil && out.VisibleFirstTokenMs == nil && out.UpstreamWaitAfterHeadersMs == nil &&
+		out.FirstTokenMs == nil && out.AfterFirstTokenMs == nil && out.ResponseLatencyMs == nil &&
+		out.UpstreamFirstEventType == "" && out.SemanticFirstEventType == "" && out.VisibleFirstEventType == "" {
 		return nil
 	}
 	return out

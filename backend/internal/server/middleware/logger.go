@@ -111,9 +111,22 @@ func appendOpsTimingFields(c *gin.Context, fields []zap.Field) []zap.Field {
 	appendLatency("auth_latency_ms", service.OpsAuthLatencyMsKey)
 	appendLatency("routing_latency_ms", service.OpsRoutingLatencyMsKey)
 	upstreamHeaderMs, hasUpstreamHeader := appendLatency("upstream_header_latency_ms", service.OpsUpstreamLatencyMsKey)
+	appendLatency("upstream_first_read_ms", service.OpsUpstreamFirstReadMsKey)
+	appendLatency("upstream_first_event_ms", service.OpsUpstreamFirstEventMsKey)
+	appendLatency("semantic_first_token_ms", service.OpsOpenAISemanticFirstTokenMsKey)
+	appendLatency("visible_first_token_ms", service.OpsOpenAIVisibleFirstTokenMsKey)
 	responseMs, hasResponse := appendLatency("response_latency_ms", service.OpsResponseLatencyMsKey)
 	ttftMs, hasTTFT := appendLatency("first_token_ms", service.OpsTimeToFirstTokenMsKey)
 	dispatchOffsetMs, hasDispatchOffset := appendLatency("upstream_dispatch_offset_ms", service.OpsUpstreamDispatchOffsetMsKey)
+	appendString := func(name, key string) {
+		if value, ok := service.GetOpsString(c, key); ok {
+			fields = append(fields, zap.String(name, value))
+		}
+	}
+	appendString("upstream_first_event_type", service.OpsUpstreamFirstEventTypeKey)
+	appendString("semantic_first_event_type", service.OpsOpenAISemanticFirstEventTypeKey)
+	appendString("visible_first_event_type", service.OpsOpenAIVisibleFirstEventTypeKey)
+	appendString("upstream_request_id", service.OpsUpstreamRequestIDKey)
 
 	// response_latency_ms is the forward duration with the HTTP header wait
 	// removed. When the upstream latency is unavailable, it already represents

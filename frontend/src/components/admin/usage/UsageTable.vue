@@ -589,10 +589,38 @@
             <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_dispatch_offset_ms) }}</span>
             <span class="text-gray-400">{{ t('usage.latencyHeader') }}</span>
             <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_header_latency_ms) }}</span>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_first_read_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyFirstRead') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_first_read_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_first_event_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyFirstEvent') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_first_event_ms) }}</span>
+            </template>
             <span class="text-gray-400">{{ t('usage.latencyHeaderToFirst') }}</span>
             <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_wait_after_headers_ms) }}</span>
+            <template v-if="timingTooltipData?.timing_breakdown?.semantic_first_token_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencySemanticFirst') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.semantic_first_token_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.visible_first_token_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyVisibleFirst') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.visible_first_token_ms) }}</span>
+            </template>
             <span class="text-gray-400">{{ t('usage.latencyAfterFirst') }}</span>
             <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.after_first_token_ms) }}</span>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencyFirstEventType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.upstream_first_event_type">{{ timingTooltipData?.timing_breakdown?.upstream_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.semantic_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencySemanticType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.semantic_first_event_type">{{ timingTooltipData?.timing_breakdown?.semantic_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.visible_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencyVisibleType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.visible_first_event_type">{{ timingTooltipData?.timing_breakdown?.visible_first_event_type }}</span>
+            </template>
             <span class="border-t border-gray-700 pt-1 font-medium text-gray-300">{{ t('usage.latencyForward') }}</span>
             <span class="border-t border-gray-700 pt-1 font-semibold text-cyan-300">{{ formatDuration(timingTooltipData?.timing_breakdown?.forward_latency_ms) }}</span>
           </div>
