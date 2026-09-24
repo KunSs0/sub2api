@@ -113,8 +113,17 @@ func appendOpsTimingFields(c *gin.Context, fields []zap.Field) []zap.Field {
 	upstreamHeaderMs, hasUpstreamHeader := appendLatency("upstream_header_latency_ms", service.OpsUpstreamLatencyMsKey)
 	appendLatency("upstream_first_read_ms", service.OpsUpstreamFirstReadMsKey)
 	appendLatency("upstream_first_event_ms", service.OpsUpstreamFirstEventMsKey)
+	appendLatency("output_item_first_ms", service.OpsOpenAIOutputItemFirstMsKey)
+	appendLatency("in_progress_ms", service.OpsOpenAIInProgressMsKey)
+	appendLatency("output_item_wait_ms", service.OpsOpenAIOutputItemWaitMsKey)
 	appendLatency("semantic_first_token_ms", service.OpsOpenAISemanticFirstTokenMsKey)
 	appendLatency("visible_first_token_ms", service.OpsOpenAIVisibleFirstTokenMsKey)
+	appendLatency("answer_first_token_ms", service.OpsOpenAIAnswerFirstTokenMsKey)
+	appendLatency("reasoning_first_token_ms", service.OpsOpenAIReasoningFirstTokenMsKey)
+	appendLatency("tool_first_token_ms", service.OpsOpenAIToolFirstTokenMsKey)
+	appendLatency("upstream_completed_ms", service.OpsUpstreamCompletedMsKey)
+	appendLatency("upstream_event_count", service.OpsUpstreamEventCountKey)
+	appendLatency("upstream_max_event_gap_ms", service.OpsUpstreamMaxEventGapMsKey)
 	responseMs, hasResponse := appendLatency("response_latency_ms", service.OpsResponseLatencyMsKey)
 	ttftMs, hasTTFT := appendLatency("first_token_ms", service.OpsTimeToFirstTokenMsKey)
 	dispatchOffsetMs, hasDispatchOffset := appendLatency("upstream_dispatch_offset_ms", service.OpsUpstreamDispatchOffsetMsKey)
@@ -124,8 +133,15 @@ func appendOpsTimingFields(c *gin.Context, fields []zap.Field) []zap.Field {
 		}
 	}
 	appendString("upstream_first_event_type", service.OpsUpstreamFirstEventTypeKey)
+	appendString("output_item_first_event_type", service.OpsOpenAIOutputItemFirstEventTypeKey)
+	appendString("output_item_first_type", service.OpsOpenAIOutputItemFirstTypeKey)
 	appendString("semantic_first_event_type", service.OpsOpenAISemanticFirstEventTypeKey)
 	appendString("visible_first_event_type", service.OpsOpenAIVisibleFirstEventTypeKey)
+	appendString("answer_first_event_type", service.OpsOpenAIAnswerFirstEventTypeKey)
+	appendString("reasoning_first_event_type", service.OpsOpenAIReasoningFirstEventTypeKey)
+	appendString("tool_first_event_type", service.OpsOpenAIToolFirstEventTypeKey)
+	appendString("upstream_max_event_gap_from_type", service.OpsUpstreamMaxEventGapFromTypeKey)
+	appendString("upstream_max_event_gap_to_type", service.OpsUpstreamMaxEventGapToTypeKey)
 	appendString("upstream_request_id", service.OpsUpstreamRequestIDKey)
 
 	// response_latency_ms is the forward duration with the HTTP header wait

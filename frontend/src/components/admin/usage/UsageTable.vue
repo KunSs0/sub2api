@@ -252,7 +252,7 @@
               v-if="row.timing_breakdown"
               class="group relative"
               @mouseenter="showTimingTooltip($event, row)"
-              @mouseleave="hideTimingTooltip"
+              @mouseleave="scheduleHideTimingTooltip"
             >
               <button
                 type="button"
@@ -569,7 +569,9 @@
   <Teleport to="body">
     <div
       v-if="timingTooltipVisible"
-      class="fixed z-[9999] pointer-events-none -translate-y-1/2"
+      class="fixed z-[9999] -translate-y-1/2"
+      @mouseenter="cancelTimingTooltipHide"
+      @mouseleave="scheduleHideTimingTooltip"
       :style="{
         left: timingTooltipPosition.x + 'px',
         top: timingTooltipPosition.y + 'px'
@@ -577,8 +579,17 @@
     >
       <div class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-xs text-white shadow-xl dark:border-gray-600 dark:bg-gray-800">
         <div class="space-y-1.5">
-          <div class="mb-2 border-b border-gray-700 pb-1.5">
+          <div class="mb-2 flex items-center justify-between gap-3 border-b border-gray-700 pb-1.5">
             <div class="text-xs font-semibold text-gray-300">{{ t('usage.latencyBreakdown') }}</div>
+            <button
+              type="button"
+              class="inline-flex shrink-0 items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+              :title="t('usage.latencyCopy')"
+              :aria-label="t('usage.latencyCopy')"
+              @click.stop="copyTimingBreakdown"
+            >
+              <Icon name="copy" size="xs" :stroke-width="2" />
+            </button>
           </div>
           <div class="grid grid-cols-[max-content_max-content] items-center gap-x-6 gap-y-1 tabular-nums">
             <span class="text-gray-400">{{ t('usage.latencyAuth') }}</span>
@@ -597,6 +608,18 @@
               <span class="text-gray-400">{{ t('usage.latencyFirstEvent') }}</span>
               <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_first_event_ms) }}</span>
             </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.output_item_first_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyOutputItemFirst') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.output_item_first_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.in_progress_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyInProgress') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.in_progress_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.output_item_wait_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyOutputItemWait') }}</span>
+              <span class="font-medium text-amber-300">{{ formatDuration(timingTooltipData?.timing_breakdown?.output_item_wait_ms) }}</span>
+            </template>
             <span class="text-gray-400">{{ t('usage.latencyHeaderToFirst') }}</span>
             <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_wait_after_headers_ms) }}</span>
             <template v-if="timingTooltipData?.timing_breakdown?.semantic_first_token_ms != null">
@@ -607,8 +630,28 @@
               <span class="text-gray-400">{{ t('usage.latencyVisibleFirst') }}</span>
               <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.visible_first_token_ms) }}</span>
             </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.answer_first_token_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyAnswerFirst') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.answer_first_token_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.reasoning_first_token_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyReasoningFirst') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.reasoning_first_token_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.tool_first_token_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyToolFirst') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.tool_first_token_ms) }}</span>
+            </template>
             <span class="text-gray-400">{{ t('usage.latencyAfterFirst') }}</span>
             <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.after_first_token_ms) }}</span>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_max_event_gap_ms != null">
+              <span class="border-t border-gray-700 pt-1 text-gray-400">{{ t('usage.latencyMaxEventGap') }}</span>
+              <span class="border-t border-gray-700 pt-1 font-medium text-amber-300">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_max_event_gap_ms) }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_event_count != null">
+              <span class="text-gray-400">{{ t('usage.latencyEventCount') }}</span>
+              <span class="font-medium text-white">{{ timingTooltipData?.timing_breakdown?.upstream_event_count }}</span>
+            </template>
             <template v-if="timingTooltipData?.timing_breakdown?.upstream_first_event_type">
               <span class="text-gray-400">{{ t('usage.latencyFirstEventType') }}</span>
               <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.upstream_first_event_type">{{ timingTooltipData?.timing_breakdown?.upstream_first_event_type }}</span>
@@ -620,6 +663,36 @@
             <template v-if="timingTooltipData?.timing_breakdown?.visible_first_event_type">
               <span class="text-gray-400">{{ t('usage.latencyVisibleType') }}</span>
               <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.visible_first_event_type">{{ timingTooltipData?.timing_breakdown?.visible_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.output_item_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencyOutputItemType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.output_item_first_event_type">{{ timingTooltipData?.timing_breakdown?.output_item_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.output_item_first_type">
+              <span class="text-gray-400">{{ t('usage.latencyOutputItemItemType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.output_item_first_type">{{ timingTooltipData?.timing_breakdown?.output_item_first_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.answer_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencyAnswerType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.answer_first_event_type">{{ timingTooltipData?.timing_breakdown?.answer_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.reasoning_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencyReasoningType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.reasoning_first_event_type">{{ timingTooltipData?.timing_breakdown?.reasoning_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.tool_first_event_type">
+              <span class="text-gray-400">{{ t('usage.latencyToolType') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="timingTooltipData?.timing_breakdown?.tool_first_event_type">{{ timingTooltipData?.timing_breakdown?.tool_first_event_type }}</span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_max_event_gap_from_type || timingTooltipData?.timing_breakdown?.upstream_max_event_gap_to_type">
+              <span class="text-gray-400">{{ t('usage.latencyMaxGapRange') }}</span>
+              <span class="max-w-64 truncate font-medium text-white" :title="`${timingTooltipData?.timing_breakdown?.upstream_max_event_gap_from_type || '-'} → ${timingTooltipData?.timing_breakdown?.upstream_max_event_gap_to_type || '-'}`">
+                {{ timingTooltipData?.timing_breakdown?.upstream_max_event_gap_from_type || '-' }} → {{ timingTooltipData?.timing_breakdown?.upstream_max_event_gap_to_type || '-' }}
+              </span>
+            </template>
+            <template v-if="timingTooltipData?.timing_breakdown?.upstream_completed_ms != null">
+              <span class="text-gray-400">{{ t('usage.latencyUpstreamCompleted') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(timingTooltipData?.timing_breakdown?.upstream_completed_ms) }}</span>
             </template>
             <span class="border-t border-gray-700 pt-1 font-medium text-gray-300">{{ t('usage.latencyForward') }}</span>
             <span class="border-t border-gray-700 pt-1 font-semibold text-cyan-300">{{ formatDuration(timingTooltipData?.timing_breakdown?.forward_latency_ms) }}</span>
@@ -634,6 +707,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useClipboard } from '@/composables/useClipboard'
 import { useAppStore } from '@/stores/app'
 import { formatDateTime, formatReasoningEffort, reasoningEffortValuesEqual } from '@/utils/format'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
@@ -715,6 +789,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const appStore = useAppStore()
+const { copyToClipboard } = useClipboard()
 const copiedRequestId = ref<string | null>(null)
 const showAccountBilling = props.showAccountBilling
 const showUpstreamEndpoint = props.showUpstreamEndpoint
@@ -802,6 +877,7 @@ const tokenTooltipData = ref<AdminUsageLog | null>(null)
 const timingTooltipVisible = ref(false)
 const timingTooltipPosition = ref({ x: 0, y: 0 })
 const timingTooltipData = ref<AdminUsageLog | null>(null)
+let timingTooltipHideTimer: ReturnType<typeof setTimeout> | null = null
 
 const getRequestTypeLabel = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
@@ -866,6 +942,101 @@ const formatDuration = (ms: number | null | undefined): string => {
   return `${Math.floor(totalSec / 3600)}h ${Math.floor((totalSec % 3600) / 60)}m`
 }
 
+const timingBreakdownText = (row: AdminUsageLog): string => {
+  const timing = row.timing_breakdown
+  if (!timing) return ''
+
+  const lines = [
+    `${t('usage.latencyAuth')}: ${formatDuration(timing.auth_latency_ms)}`,
+    `${t('usage.latencyRouting')}: ${formatDuration(timing.routing_latency_ms)}`,
+    `${t('usage.latencyDispatch')}: ${formatDuration(timing.upstream_dispatch_offset_ms)}`,
+    `${t('usage.latencyHeader')}: ${formatDuration(timing.upstream_header_latency_ms)}`,
+  ]
+
+  if (timing.upstream_first_read_ms != null) {
+    lines.push(`${t('usage.latencyFirstRead')}: ${formatDuration(timing.upstream_first_read_ms)}`)
+  }
+  if (timing.upstream_first_event_ms != null) {
+    lines.push(`${t('usage.latencyFirstEvent')}: ${formatDuration(timing.upstream_first_event_ms)}`)
+  }
+  if (timing.output_item_first_ms != null) {
+    lines.push(`${t('usage.latencyOutputItemFirst')}: ${formatDuration(timing.output_item_first_ms)}`)
+  }
+  if (timing.in_progress_ms != null) {
+    lines.push(`${t('usage.latencyInProgress')}: ${formatDuration(timing.in_progress_ms)}`)
+  }
+  if (timing.output_item_wait_ms != null) {
+    lines.push(`${t('usage.latencyOutputItemWait')}: ${formatDuration(timing.output_item_wait_ms)}`)
+  }
+
+  lines.push(`${t('usage.latencyHeaderToFirst')}: ${formatDuration(timing.upstream_wait_after_headers_ms)}`)
+
+  if (timing.semantic_first_token_ms != null) {
+    lines.push(`${t('usage.latencySemanticFirst')}: ${formatDuration(timing.semantic_first_token_ms)}`)
+  }
+  if (timing.visible_first_token_ms != null) {
+    lines.push(`${t('usage.latencyVisibleFirst')}: ${formatDuration(timing.visible_first_token_ms)}`)
+  }
+  if (timing.answer_first_token_ms != null) {
+    lines.push(`${t('usage.latencyAnswerFirst')}: ${formatDuration(timing.answer_first_token_ms)}`)
+  }
+  if (timing.reasoning_first_token_ms != null) {
+    lines.push(`${t('usage.latencyReasoningFirst')}: ${formatDuration(timing.reasoning_first_token_ms)}`)
+  }
+  if (timing.tool_first_token_ms != null) {
+    lines.push(`${t('usage.latencyToolFirst')}: ${formatDuration(timing.tool_first_token_ms)}`)
+  }
+
+  lines.push(`${t('usage.latencyAfterFirst')}: ${formatDuration(timing.after_first_token_ms)}`)
+
+  if (timing.upstream_max_event_gap_ms != null) {
+    lines.push(`${t('usage.latencyMaxEventGap')}: ${formatDuration(timing.upstream_max_event_gap_ms)}`)
+  }
+  if (timing.upstream_event_count != null) {
+    lines.push(`${t('usage.latencyEventCount')}: ${timing.upstream_event_count}`)
+  }
+
+  if (timing.upstream_first_event_type) {
+    lines.push(`${t('usage.latencyFirstEventType')}: ${timing.upstream_first_event_type}`)
+  }
+  if (timing.semantic_first_event_type) {
+    lines.push(`${t('usage.latencySemanticType')}: ${timing.semantic_first_event_type}`)
+  }
+  if (timing.visible_first_event_type) {
+    lines.push(`${t('usage.latencyVisibleType')}: ${timing.visible_first_event_type}`)
+  }
+  if (timing.output_item_first_event_type) {
+    lines.push(`${t('usage.latencyOutputItemType')}: ${timing.output_item_first_event_type}`)
+  }
+  if (timing.output_item_first_type) {
+    lines.push(`${t('usage.latencyOutputItemItemType')}: ${timing.output_item_first_type}`)
+  }
+  if (timing.answer_first_event_type) {
+    lines.push(`${t('usage.latencyAnswerType')}: ${timing.answer_first_event_type}`)
+  }
+  if (timing.reasoning_first_event_type) {
+    lines.push(`${t('usage.latencyReasoningType')}: ${timing.reasoning_first_event_type}`)
+  }
+  if (timing.tool_first_event_type) {
+    lines.push(`${t('usage.latencyToolType')}: ${timing.tool_first_event_type}`)
+  }
+  if (timing.upstream_max_event_gap_from_type || timing.upstream_max_event_gap_to_type) {
+    lines.push(`${t('usage.latencyMaxGapRange')}: ${timing.upstream_max_event_gap_from_type || '-'} → ${timing.upstream_max_event_gap_to_type || '-'}`)
+  }
+  if (timing.upstream_completed_ms != null) {
+    lines.push(`${t('usage.latencyUpstreamCompleted')}: ${formatDuration(timing.upstream_completed_ms)}`)
+  }
+
+  lines.push(`${t('usage.latencyForward')}: ${formatDuration(timing.forward_latency_ms)}`)
+  return `${t('usage.latencyBreakdown')}\n${lines.join('\n')}`
+}
+
+const copyTimingBreakdown = async () => {
+  const row = timingTooltipData.value
+  if (!row) return
+  await copyToClipboard(timingBreakdownText(row), t('usage.latencyCopied'))
+}
+
 // Cost tooltip functions
 const showTooltip = (event: MouseEvent, row: AdminUsageLog) => {
   const target = event.currentTarget as HTMLElement
@@ -898,6 +1069,7 @@ const hideTokenTooltip = () => {
 
 // Latency breakdown tooltip functions
 const showTimingTooltip = (event: MouseEvent, row: AdminUsageLog) => {
+  cancelTimingTooltipHide()
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
   timingTooltipData.value = row
@@ -907,7 +1079,22 @@ const showTimingTooltip = (event: MouseEvent, row: AdminUsageLog) => {
 }
 
 const hideTimingTooltip = () => {
+  cancelTimingTooltipHide()
   timingTooltipVisible.value = false
   timingTooltipData.value = null
+}
+
+const cancelTimingTooltipHide = () => {
+  if (timingTooltipHideTimer) {
+    clearTimeout(timingTooltipHideTimer)
+    timingTooltipHideTimer = null
+  }
+}
+
+const scheduleHideTimingTooltip = () => {
+  cancelTimingTooltipHide()
+  timingTooltipHideTimer = setTimeout(() => {
+    hideTimingTooltip()
+  }, 250)
 }
 </script>

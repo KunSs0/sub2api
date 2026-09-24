@@ -9,8 +9,13 @@ const appStoreMocks = vi.hoisted(() => ({
   showError: vi.fn(),
 }))
 
+const clipboardMocks = vi.hoisted(() => ({
+  copyToClipboard: vi.fn().mockResolvedValue(true),
+}))
+
 vi.mock('@/utils/ipGeoLookup', () => ipGeoMocks)
 vi.mock('@/stores/app', () => ({ useAppStore: () => appStoreMocks }))
+vi.mock('@/composables/useClipboard', () => ({ useClipboard: () => clipboardMocks }))
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -58,6 +63,9 @@ const messages: Record<string, string> = {
   'usage.stream': 'Stream',
   'usage.sync': 'Sync',
   'usage.nativeCompactionV2': 'Compaction',
+  'usage.latencyBreakdown': 'Timing breakdown',
+  'usage.latencyCopy': 'Copy timing details',
+  'usage.latencyCopied': 'Timing details copied',
   'admin.usage.billingModeToken': 'Token',
   'admin.usage.billingModePerRequest': 'Per request',
   'admin.usage.billingModeImage': 'Image',
@@ -101,6 +109,17 @@ const DataTableStub = {
         <slot name="cell-request_id" :row="row" />
         <slot name="cell-upstream_request_id" :row="row" />
         <slot name="cell-proxy" :row="row" />
+      </div>
+    </div>
+  `,
+}
+
+const DataTableTimingStub = {
+  props: ['data'],
+  template: `
+    <div>
+      <div v-for="row in data" :key="row.request_id">
+        <slot name="cell-latency" :row="row" />
       </div>
     </div>
   `,
@@ -671,6 +690,55 @@ describe('admin UsageTable request ID column', () => {
 
     expect(writeText).toHaveBeenCalledWith('20260903082826779695')
     expect(appStoreMocks.showSuccess).toHaveBeenCalledWith('Upstream ID copied')
+  })
+})
+
+describe('admin UsageTable latency breakdown', () => {
+  it('shows a copy icon and copies the timing details from the tooltip', async () => {
+    clipboardMocks.copyToClipboard.mockClear()
+
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          ...baseImageRow,
+          request_id: 'req-timing-copy',
+          first_token_ms: 1231,
+          duration_ms: 8067,
+          timing_breakdown: {
+            auth_latency_ms: 12,
+            upstream_header_latency_ms: 711,
+            upstream_first_read_ms: 733,
+            upstream_first_event_ms: 766,
+            semantic_first_token_ms: 1231,
+            visible_first_token_ms: 1231,
+            upstream_first_event_type: 'response.created',
+            forward_latency_ms: 8037,
+          },
+        }],
+        loading: false,
+        columns: [{ key: 'latency', label: 'Latency' }],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableTimingStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    await wrapper.get('div.group.relative').trigger('mouseenter')
+    await nextTick()
+
+    const copyButton = wrapper.get('button[title="Copy timing details"]')
+    expect(copyButton.findComponent({ name: 'Icon' }).exists()).toBe(true)
+    await copyButton.trigger('click')
+
+    expect(clipboardMocks.copyToClipboard).toHaveBeenCalledWith(
+      expect.stringContaining('Timing breakdown'),
+      'Timing details copied',
+    )
   })
 })
 

@@ -1741,11 +1741,27 @@ export interface UsageTimingBreakdown {
   upstream_header_latency_ms?: number | null
   upstream_first_read_ms?: number | null
   upstream_first_event_ms?: number | null
+  output_item_first_ms?: number | null
+  in_progress_ms?: number | null
+  output_item_wait_ms?: number | null
   semantic_first_token_ms?: number | null
   visible_first_token_ms?: number | null
+  answer_first_token_ms?: number | null
+  reasoning_first_token_ms?: number | null
+  tool_first_token_ms?: number | null
   upstream_first_event_type?: string | null
+  output_item_first_event_type?: string | null
+  output_item_first_type?: string | null
   semantic_first_event_type?: string | null
   visible_first_event_type?: string | null
+  answer_first_event_type?: string | null
+  reasoning_first_event_type?: string | null
+  tool_first_event_type?: string | null
+  upstream_completed_ms?: number | null
+  upstream_event_count?: number | null
+  upstream_max_event_gap_ms?: number | null
+  upstream_max_event_gap_from_type?: string | null
+  upstream_max_event_gap_to_type?: string | null
   upstream_wait_after_headers_ms?: number | null
   first_token_ms?: number | null
   after_first_token_ms?: number | null

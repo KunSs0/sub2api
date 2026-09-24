@@ -215,12 +215,14 @@
 
         <!-- Copy Button -->
         <button
+          type="button"
           v-if="outputLines.length > 0"
           @click="copyOutput"
-          class="absolute right-2 top-2 rounded-lg bg-gray-800/80 p-1.5 text-gray-400 opacity-0 transition-all hover:bg-gray-700 hover:text-white group-hover:opacity-100"
+          class="absolute right-2 top-2 rounded-lg bg-gray-800/80 p-1.5 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
           :title="t('admin.accounts.copyOutput')"
+          :aria-label="t('admin.accounts.copyOutput')"
         >
-          <Icon name="link" size="sm" :stroke-width="2" />
+          <Icon name="copy" size="sm" :stroke-width="2" />
         </button>
       </div>
 
