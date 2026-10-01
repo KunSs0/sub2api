@@ -213,6 +213,9 @@ type SystemSettings struct {
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
+	// User-facing account quota page feature (账号额度：只读展示账号池剩余额度窗口)
+	UserAccountQuotaEnabled bool `json:"user_account_quota_enabled"`
+
 	// Subscription feature switch: gates the whole user-facing subscription surface
 	// (sidebar entries, purchase-page subscription tab, header progress badge,
 	// usage billing-type filter, /subscriptions route). Pairs with PaymentBalanceDisabled
@@ -403,6 +406,9 @@ type PublicSettings struct {
 
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+
+	// User-facing account quota page feature (see SystemSettings.UserAccountQuotaEnabled)
+	UserAccountQuotaEnabled bool `json:"user_account_quota_enabled"`
 
 	// Subscription feature switch (see SystemSettings.SubscriptionEnabled)
 	SubscriptionEnabled bool `json:"subscription_enabled"`

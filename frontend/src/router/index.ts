@@ -277,6 +277,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/account-quota',
+    name: 'AccountQuota',
+    component: () => import('@/views/user/AccountQuotaView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Account Quota',
+      titleKey: 'accountQuota.title',
+      descriptionKey: 'accountQuota.description'
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),

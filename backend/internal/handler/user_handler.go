@@ -22,6 +22,11 @@ type UserHandler struct {
 	emailCache            service.EmailCache
 	affiliateService      *service.AffiliateService
 	userPlatformQuotaRepo service.UserPlatformQuotaRepository
+	// 用户端「账号额度」页面依赖（见 user_account_quota_handler.go）。
+	settingService      *service.SettingService
+	apiKeyService       *service.APIKeyService
+	accountRepo         service.AccountRepository
+	accountUsageService *service.AccountUsageService
 }
 
 // NewUserHandler creates a new UserHandler
@@ -32,6 +37,10 @@ func NewUserHandler(
 	emailCache service.EmailCache,
 	affiliateService *service.AffiliateService,
 	userPlatformQuotaRepo service.UserPlatformQuotaRepository,
+	settingService *service.SettingService,
+	apiKeyService *service.APIKeyService,
+	accountRepo service.AccountRepository,
+	accountUsageService *service.AccountUsageService,
 ) *UserHandler {
 	return &UserHandler{
 		userService:           userService,
@@ -40,6 +49,10 @@ func NewUserHandler(
 		emailCache:            emailCache,
 		affiliateService:      affiliateService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
+		settingService:        settingService,
+		apiKeyService:         apiKeyService,
+		accountRepo:           accountRepo,
+		accountUsageService:   accountUsageService,
 	}
 }
 

@@ -537,6 +537,12 @@ const (
 	// sidebar entry is hidden. Defaults to false (opt-in feature).
 	SettingKeyAvailableChannelsEnabled = "available_channels_enabled"
 
+	// SettingKeyUserAccountQuotaEnabled is a DB-backed soft switch for the user-facing
+	// "账号额度" (account quota) page: a read-only view of upstream account-pool
+	// remaining quota windows (5h/7d ...). When false: the user endpoint returns an
+	// empty list and the sidebar entry is hidden. Defaults to false (opt-in feature).
+	SettingKeyUserAccountQuotaEnabled = "user_account_quota_enabled"
+
 	// SettingKeySubscriptionEnabled is a DB-backed soft switch for the user-facing
 	// subscription surface: sidebar entries, purchase-page subscription tab, header
 	// progress badge, usage billing-type filter and the /subscriptions route. When

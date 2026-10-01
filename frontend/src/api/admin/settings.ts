@@ -734,6 +734,9 @@ export interface SystemSettings {
   // Available Channels feature switch
   available_channels_enabled: boolean;
 
+  // 用户端「账号额度」页面 feature switch
+  user_account_quota_enabled?: boolean;
+
   // Subscription feature switch (user sidebar "My Subscriptions" entry)
   subscription_enabled: boolean;
 
@@ -1042,6 +1045,9 @@ export interface UpdateSettingsRequest {
 
   // Available Channels feature switch
   available_channels_enabled?: boolean;
+
+  // 用户端「账号额度」页面 feature switch
+  user_account_quota_enabled?: boolean;
 
   // Subscription feature switch
   subscription_enabled?: boolean;

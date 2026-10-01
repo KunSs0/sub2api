@@ -277,6 +277,11 @@ export interface PublicSettings {
   /** When true, user monitor hides the user ranking tab and /users payload. */
   channel_monitor_hide_user_ranking?: boolean
   available_channels_enabled: boolean
+  /**
+   * 用户端「账号额度」页面：只读展示可见上游账号池的剩余额度窗口。
+   * Opt-in feature（默认关闭）。未加载时 featureFlags 按 opt-in 回退为 false。
+   */
+  user_account_quota_enabled?: boolean
   /** When false, the whole user-facing subscription surface is hidden. Default true. */
   subscription_enabled: boolean
   /** Mirrors payment config BALANCE_PAYMENT_DISABLED; true = balance top-up closed (subscription-only site). */

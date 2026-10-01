@@ -45,6 +45,13 @@ export default {
           enabled: 'Enable Available Channels',
           enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
         },
+        accountQuota: {
+          title: 'Account Quota (user-facing)',
+          description:
+            'Show logged-in users a read-only view of the remaining quota windows (5h / 7d ...) for the upstream accounts they can access. Disabled by default.',
+          enabled: 'Enable Account Quota page',
+          enabledHint: 'When off, the sidebar entry is hidden and the endpoint returns an empty list.',
+        },
         siteBillingMode: {
           title: 'Site Billing Mode',
           description: 'Controls which purchase options users see. Defaults to "Recharge & Subscription".',

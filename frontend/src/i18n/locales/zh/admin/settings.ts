@@ -45,6 +45,13 @@ export default {
           enabled: '启用可用渠道',
           enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
         },
+        accountQuota: {
+          title: '账号额度（用户端）',
+          description:
+            '向已登录用户只读展示其可见上游账号的剩余额度窗口（5 小时 / 7 天等）。默认关闭。',
+          enabled: '启用账号额度页面',
+          enabledHint: '关闭后用户端侧边栏入口隐藏，接口返回空数组。',
+        },
         siteBillingMode: {
           title: '站点类型',
           description: '决定用户端提供哪些购买方式。默认「充值 & 订阅」。',

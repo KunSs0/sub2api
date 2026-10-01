@@ -321,6 +321,9 @@ type SystemSettings struct {
 	// Available Channels feature switch (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 
+	// User-facing account quota page feature switch (账号额度 view; see SettingKeyUserAccountQuotaEnabled)
+	UserAccountQuotaEnabled bool `json:"user_account_quota_enabled"`
+
 	// Subscription feature switch: gates the whole user-facing subscription surface
 	// (sidebar entries, purchase-page subscription tab, header badge, /subscriptions route).
 	SubscriptionEnabled bool `json:"subscription_enabled"`
@@ -434,6 +437,8 @@ type PublicSettings struct {
 	ChannelMonitorHideUserRanking        bool   `json:"channel_monitor_hide_user_ranking"`
 
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
+
+	UserAccountQuotaEnabled bool `json:"user_account_quota_enabled"`
 
 	SubscriptionEnabled bool `json:"subscription_enabled"`
 

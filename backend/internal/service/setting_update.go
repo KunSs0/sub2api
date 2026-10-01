@@ -432,6 +432,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// Available channels feature switch
 	updates[SettingKeyAvailableChannelsEnabled] = strconv.FormatBool(settings.AvailableChannelsEnabled)
 
+	// User-facing account quota page feature switch
+	updates[SettingKeyUserAccountQuotaEnabled] = strconv.FormatBool(settings.UserAccountQuotaEnabled)
+
 	// Subscription feature switch
 	updates[SettingKeySubscriptionEnabled] = strconv.FormatBool(settings.SubscriptionEnabled)
 

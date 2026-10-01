@@ -202,6 +202,9 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
 
+		// User-facing account quota page (default disabled; opt-in)
+		SettingKeyUserAccountQuotaEnabled: "false",
+
 		// Subscription feature (default enabled; opt-out)
 		SettingKeySubscriptionEnabled: "true",
 
@@ -826,6 +829,9 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"
+
+	// User-facing account quota page (default: disabled; strict true)
+	result.UserAccountQuotaEnabled = settings[SettingKeyUserAccountQuotaEnabled] == "true"
 
 	// Subscription feature (default: enabled; only an explicit false disables)
 	result.SubscriptionEnabled = !isFalseSettingValue(settings[SettingKeySubscriptionEnabled])

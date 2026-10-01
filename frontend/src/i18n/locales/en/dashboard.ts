@@ -631,6 +631,40 @@ export default {
     }
   },
 
+  // User-facing account quota
+  accountQuota: {
+    title: 'Account Quota',
+    description: 'Check the remaining quota windows (5h / 7d ...) of the accounts you can use',
+    refresh: 'Refresh',
+    lastUpdated: 'Updated at {time}',
+    loadError: 'Failed to load account quotas',
+    empty: {
+      title: 'No accounts to show',
+      description: 'No usable accounts are configured yet, or the feature is disabled.'
+    },
+    windows: {
+      fiveHour: '5-hour quota',
+      sevenDay: '7-day quota',
+      sevenDaySonnet: '7-day quota (Sonnet)',
+      sevenDayFable: '7-day quota (Fable)',
+      thirtyDay: '30-day quota',
+      geminiSharedDaily: 'Daily quota (shared)',
+      geminiProDaily: 'Daily quota (Pro)',
+      geminiFlashDaily: 'Daily quota (Flash)'
+    },
+    remaining: '{percent} remaining',
+    used: '{percent} used',
+    exhausted: 'Quota exhausted',
+    resetsAt: 'Resets at {time}',
+    noUsage: 'No quota data',
+    noUsageHint: 'Quota queries are not supported for this account type, or data has not been reported yet',
+    rateLimited: 'Rate limited',
+    paused: 'Paused',
+    running: 'Active',
+    groups: 'Groups: {names}',
+    unknownWindow: 'Quota'
+  },
+
   // Available Channels (user-facing)
   availableChannels: {
     title: 'Available Channels',

@@ -104,6 +104,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Available Channels',
   }),
+  userAccountQuota: defineFlag({
+    key: 'user_account_quota_enabled',
+    mode: 'opt-in',
+    label: 'User Account Quota',
+  }),
   subscription: defineFlag({
     key: 'subscription_enabled',
     mode: 'opt-out',

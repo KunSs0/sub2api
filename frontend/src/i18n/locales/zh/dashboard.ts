@@ -636,6 +636,40 @@ export default {
     }
   },
 
+  // 用户端 账号额度 (user-facing account quota)
+  accountQuota: {
+    title: '账号额度',
+    description: '查看您可用账号的剩余额度窗口（5 小时 / 7 天等）',
+    refresh: '刷新',
+    lastUpdated: '更新于 {time}',
+    loadError: '加载账号额度失败',
+    empty: {
+      title: '暂无可显示的账号',
+      description: '管理员尚未配置可用账号，或该功能未开启。'
+    },
+    windows: {
+      fiveHour: '5 小时额度',
+      sevenDay: '7 天额度',
+      sevenDaySonnet: '7 天额度 (Sonnet)',
+      sevenDayFable: '7 天额度 (Fable)',
+      thirtyDay: '30 天额度',
+      geminiSharedDaily: '每日额度 (共享)',
+      geminiProDaily: '每日额度 (Pro)',
+      geminiFlashDaily: '每日额度 (Flash)'
+    },
+    remaining: '剩余 {percent}',
+    used: '已用 {percent}',
+    exhausted: '额度已用尽',
+    resetsAt: '{time} 重置',
+    noUsage: '暂无额度数据',
+    noUsageHint: '该账号类型暂不支持额度查询，或数据尚未上报',
+    rateLimited: '限流中',
+    paused: '已暂停',
+    running: '运行中',
+    groups: '分组 {names}',
+    unknownWindow: '额度'
+  },
+
   // Available Channels (user-facing)
   availableChannels: {
     title: '可用渠道',
